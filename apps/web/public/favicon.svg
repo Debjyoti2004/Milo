@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FF6830"/>
+      <stop offset="50%" stop-color="#F03060"/>
+      <stop offset="100%" stop-color="#D81B75"/>
+    </linearGradient>
+  </defs>
+  <!-- Rounded square background -->
+  <rect width="100" height="100" rx="22" fill="url(#bg)"/>
+
+  <!-- Bold M: two outer verticals + V-notch -->
+  <path fill="white" d="
+    M10,76 L10,28 L18,28 L35,54 L52,28 L60,28 L60,76 L52,76 L52,44 L35,64 L18,44 L18,76 Z
+  "/>
+
+  <!-- Vertical dumbbell on the right -->
+  <!-- Top collar -->
+  <rect x="69" y="24" width="16" height="5" rx="2.5" fill="white"/>
+  <!-- Top plate -->
+  <rect x="71" y="29" width="12" height="8" rx="2" fill="white"/>
+  <!-- Bar -->
+  <rect x="75" y="37" width="4" height="26" rx="2" fill="white"/>
+  <!-- Bottom plate -->
+  <rect x="71" y="63" width="12" height="8" rx="2" fill="white"/>
+  <!-- Bottom collar -->
+  <rect x="69" y="71" width="16" height="5" rx="2.5" fill="white"/>
+</svg>
