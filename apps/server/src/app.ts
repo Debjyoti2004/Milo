@@ -2,6 +2,9 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
+import { existsSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { env } from "./lib/env.js";
 import { localUploadRoot } from "./lib/storage.js";
 import { errorHandler, notFoundHandler } from "./middleware/error.js";
@@ -14,9 +17,13 @@ import { routinesRouter } from "./modules/routines/routines.router.js";
 import { sessionsRouter } from "./modules/sessions/sessions.router.js";
 import { statsRouter } from "./modules/stats/stats.router.js";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+// In production: apps/server/dist → go up 3 levels to repo root → apps/web/dist
+const webDistPath = join(__dirname, "../../../apps/web/dist");
+
 export const app = express();
 
-app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
+app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(cors({ origin: env.webOrigin, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
@@ -41,5 +48,14 @@ app.use("/api/waist-logs", waistLogsRouter);
 app.use("/api/body-photos", bodyPhotosRouter);
 app.use("/api/stats", statsRouter);
 
-app.use(notFoundHandler);
+// Serve React frontend in production
+if (existsSync(webDistPath)) {
+  app.use(express.static(webDistPath));
+  app.get("*", (_req, res) => {
+    res.sendFile(join(webDistPath, "index.html"));
+  });
+} else {
+  app.use(notFoundHandler);
+}
+
 app.use(errorHandler);
