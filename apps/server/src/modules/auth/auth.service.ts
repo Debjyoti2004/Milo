@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import type { LoginInput, SignupInput } from "@gym/shared";
 import { ApiError } from "../../lib/ApiError.js";
+import { getGoogleUser } from "../../lib/google.js";
 import { generateRefreshToken, hashRefreshToken, signAccessToken } from "../../lib/jwt.js";
 import { prisma } from "../../lib/prisma.js";
 
@@ -27,10 +28,35 @@ export async function signup(input: SignupInput) {
 
 export async function login(input: LoginInput) {
   const user = await prisma.user.findUnique({ where: { email: input.email } });
-  if (!user) throw ApiError.unauthorized("Invalid email or password");
+  if (!user || !user.passwordHash) throw ApiError.unauthorized("Invalid email or password");
 
   const valid = await bcrypt.compare(input.password, user.passwordHash);
   if (!valid) throw ApiError.unauthorized("Invalid email or password");
+
+  return { user, ...(await issueTokens(user.id)) };
+}
+
+export async function googleLogin(code: string) {
+  const googleUser = await getGoogleUser(code);
+
+  // Find by googleId first, then by email (links existing account)
+  let user = await prisma.user.findUnique({ where: { googleId: googleUser.googleId } });
+
+  if (!user) {
+    const byEmail = await prisma.user.findUnique({ where: { email: googleUser.email } });
+    if (byEmail) {
+      // Link Google to existing email account
+      user = await prisma.user.update({
+        where: { id: byEmail.id },
+        data: { googleId: googleUser.googleId },
+      });
+    } else {
+      // Brand new user via Google
+      user = await prisma.user.create({
+        data: { email: googleUser.email, name: googleUser.name, googleId: googleUser.googleId },
+      });
+    }
+  }
 
   return { user, ...(await issueTokens(user.id)) };
 }

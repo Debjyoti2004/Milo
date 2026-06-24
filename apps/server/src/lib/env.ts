@@ -19,6 +19,9 @@ if (storageDriver === "s3") {
 
 export const env = {
   geminiApiKey: process.env.GEMINI_API_KEY ?? "",
+  googleClientId: process.env.GOOGLE_CLIENT_ID ?? "",
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+  googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL ?? "http://localhost:5173/api/auth/google/callback",
   port: Number(process.env.PORT ?? 4000),
   databaseUrl: required("DATABASE_URL"),
   webOrigin: process.env.WEB_ORIGIN ?? "http://localhost:5173",

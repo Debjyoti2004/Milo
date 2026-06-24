@@ -3,6 +3,8 @@ import rateLimit from "express-rate-limit";
 import { loginSchema, signupSchema } from "@gym/shared";
 import { ApiError } from "../../lib/ApiError.js";
 import { clearAuthCookies, setAuthCookies } from "../../lib/cookies.js";
+import { env } from "../../lib/env.js";
+import { getOAuthClient } from "../../lib/google.js";
 import { toUserDTO } from "../../lib/serialize.js";
 import { asyncHandler } from "../../middleware/error.js";
 import { requireAuth } from "../../middleware/auth.js";
@@ -66,5 +68,29 @@ authRouter.get(
   asyncHandler(async (req, res) => {
     const user = await authService.getCurrentUser(req.userId!);
     res.json({ user: toUserDTO(user), profile: user.profile });
+  }),
+);
+
+// Google OAuth — redirect to Google consent screen
+authRouter.get("/google", (_, res) => {
+  const client = getOAuthClient();
+  const url = client.generateAuthUrl({
+    access_type: "offline",
+    scope: ["openid", "email", "profile"],
+    prompt: "select_account",
+  });
+  res.redirect(url);
+});
+
+// Google OAuth — callback after Google consent
+authRouter.get(
+  "/google/callback",
+  asyncHandler(async (req, res) => {
+    const code = req.query.code as string | undefined;
+    if (!code) return res.redirect(`${env.webOrigin}/login?error=google_failed`);
+
+    const { accessToken, refreshToken } = await authService.googleLogin(code);
+    setAuthCookies(res, accessToken, refreshToken);
+    res.redirect(env.webOrigin);
   }),
 );

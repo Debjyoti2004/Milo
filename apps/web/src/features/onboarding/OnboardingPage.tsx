@@ -9,7 +9,6 @@ import {
 } from "@gym/shared";
 import { calculateDailyTargets } from "@gym/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Flame } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -43,6 +42,9 @@ const STEPS = ["Basics", "Goals", "Review"] as const;
 
 export function OnboardingPage() {
   const [step, setStep] = useState(0);
+  const [heightUnit, setHeightUnit] = useState<"cm" | "ft">("cm");
+  const [feet, setFeet] = useState("");
+  const [inches, setInches] = useState("");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const showToast = useToastStore((s) => s.show);
@@ -52,11 +54,19 @@ export function OnboardingPage() {
     handleSubmit,
     trigger,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<OnboardingInput>({
     resolver: zodResolver(onboardingSchema),
     defaultValues: { unitPreference: "KG", trainingDaysPerWeek: 6 },
   });
+
+  const handleFeetInchesChange = (ft: string, ins: string) => {
+    const f = parseFloat(ft) || 0;
+    const i = parseFloat(ins) || 0;
+    const cm = Math.round((f * 30.48) + (i * 2.54));
+    if (cm > 0) setValue("heightCm", cm, { shouldValidate: true });
+  };
 
   const onboard = useMutation({
     mutationFn: (input: OnboardingInput) => api.post("/profile/onboarding", input),
@@ -96,9 +106,7 @@ export function OnboardingPage() {
     <div className="flex min-h-screen flex-col bg-bg px-6 py-10">
       <div className="mx-auto w-full max-w-md flex-1">
         <div className="mb-6 flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-            <Flame className="size-5" />
-          </div>
+          <img src="/favicon.svg" alt="Milo" className="size-10 rounded-xl" />
           <div>
             <p className="text-sm font-semibold text-text">{STEPS[step]}</p>
             <p className="text-xs text-text-muted">
@@ -132,8 +140,63 @@ export function OnboardingPage() {
               <FieldWrapper label="Date of birth" error={errors.dateOfBirth?.message}>
                 <Input type="date" {...register("dateOfBirth")} />
               </FieldWrapper>
-              <FieldWrapper label="Height (cm)" error={errors.heightCm?.message}>
-                <Input type="number" step="0.1" placeholder="175" {...register("heightCm", { valueAsNumber: true })} />
+              <FieldWrapper label="Height" error={errors.heightCm?.message}>
+                <div className="flex flex-col gap-2">
+                  {/* Unit toggle */}
+                  <div className="flex rounded-xl bg-surface-2 p-1 w-fit">
+                    {(["cm", "ft"] as const).map((u) => (
+                      <button
+                        key={u}
+                        type="button"
+                        onClick={() => setHeightUnit(u)}
+                        className={`px-4 py-1 rounded-lg text-sm font-medium transition-colors ${
+                          heightUnit === u
+                            ? "bg-bg text-text shadow-sm"
+                            : "text-text-muted hover:text-text"
+                        }`}
+                      >
+                        {u === "cm" ? "cm" : "ft / in"}
+                      </button>
+                    ))}
+                  </div>
+                  {heightUnit === "cm" ? (
+                    <Input
+                      type="number"
+                      step="1"
+                      placeholder="175"
+                      {...register("heightCm", { valueAsNumber: true })}
+                    />
+                  ) : (
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Input
+                          type="number"
+                          placeholder="5"
+                          value={feet}
+                          onChange={(e) => {
+                            setFeet(e.target.value);
+                            handleFeetInchesChange(e.target.value, inches);
+                          }}
+                        />
+                        <p className="mt-1 text-xs text-text-muted pl-1">feet</p>
+                      </div>
+                      <div className="flex-1">
+                        <Input
+                          type="number"
+                          placeholder="11"
+                          min="0"
+                          max="11"
+                          value={inches}
+                          onChange={(e) => {
+                            setInches(e.target.value);
+                            handleFeetInchesChange(feet, e.target.value);
+                          }}
+                        />
+                        <p className="mt-1 text-xs text-text-muted pl-1">inches</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </FieldWrapper>
               <FieldWrapper label="Current weight (kg)" error={errors.currentWeightKg?.message}>
                 <Input type="number" step="0.1" placeholder="70" {...register("currentWeightKg", { valueAsNumber: true })} />
