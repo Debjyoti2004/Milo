@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build --workspace=@gym/shared && npm run build --workspace=@gym/web",
+  "buildCommand": "npm --prefix packages/shared run build && npm --prefix apps/web run build",
   "outputDirectory": "apps/web/dist",
   "installCommand": "npm ci",
   "rewrites": [
